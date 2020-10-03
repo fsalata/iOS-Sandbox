@@ -12,15 +12,28 @@ final class FlowCoordinator: BaseCoordinator {
     var navigation: CustomNavigationController?
     var presentationType: PresentationType?
     
+    var innerNavigation: CustomNavigationController?
+    
     var flowViewModel: FlowViewModel?
     var firstViewController: FirstViewController?
     var secondViewController: SecondViewController?
     var thirdViewController: ThirdViewController?
     
+    var temporaryViewController: TemporaryViewController?
+    
+    lazy var flowType: FlowType = {
+        switch presentationType {
+        case .modal(_):
+            return .modal
+        default:
+            return .push
+        }
+    }()
+    
     func start() -> UIViewController {
         flowViewModel = FlowViewModel()
         flowViewModel?.delegate = self
-        firstViewController = FirstViewController(viewModel: flowViewModel!)
+        firstViewController = FirstViewController(viewModel: flowViewModel!, presentationType: flowType)
         return firstViewController!
     }
     
@@ -45,4 +58,25 @@ extension FlowCoordinator: FlowViewModelDelegate {
         navigation?.pushViewController(thirdViewController!, animated: true)
     }
     
+    func backToStart(_ viewModel: FlowViewModel) {
+        navigation?.popToViewController(firstViewController!, animated: true)
+    }
 }
+
+extension FlowCoordinator: TemporaryViewModelDelegate {
+    func startFlow(_ viewModel: TemporaryViewModel) {
+        flowViewModel = FlowViewModel()
+        flowViewModel?.delegate = self
+        firstViewController = FirstViewController(viewModel: flowViewModel!, presentationType: flowType)
+        navigation?.viewControllers.removeAll { $0 === temporaryViewController }
+        navigation?.pushViewController(firstViewController!, animated: false)
+    }
+}
+
+extension FlowCoordinator {
+    enum FlowType {
+        case modal
+        case push
+    }
+}
+    
