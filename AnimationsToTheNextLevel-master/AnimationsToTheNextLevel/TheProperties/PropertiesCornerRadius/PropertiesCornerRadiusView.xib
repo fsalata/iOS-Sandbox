@@ -1,0 +1,51 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<document type="com.apple.InterfaceBuilder3.CocoaTouch.XIB" version="3.0" toolsVersion="14313.18" targetRuntime="iOS.CocoaTouch" propertyAccessControl="none" useAutolayout="YES" useTraitCollections="YES" useSafeAreas="YES" colorMatched="YES">
+    <device id="retina4_7" orientation="landscape">
+        <adaptation id="fullscreen"/>
+    </device>
+    <dependencies>
+        <deployment identifier="iOS"/>
+        <plugIn identifier="com.apple.InterfaceBuilder.IBCocoaTouchPlugin" version="14283.14"/>
+        <capability name="Safe area layout guides" minToolsVersion="9.0"/>
+        <capability name="documents saved in the Xcode 8 format" minToolsVersion="8.0"/>
+    </dependencies>
+    <objects>
+        <placeholder placeholderIdentifier="IBFilesOwner" id="-1" userLabel="File's Owner" customClass="PropertiesCornerRadiusView" customModule="AnimationsToTheNextLevel" customModuleProvider="target">
+            <connections>
+                <outlet property="animatedView" destination="vT1-2c-sNR" id="nCn-V9-9K2"/>
+                <outlet property="view" destination="i5M-Pr-FkT" id="sfx-zR-JGt"/>
+            </connections>
+        </placeholder>
+        <placeholder placeholderIdentifier="IBFirstResponder" id="-2" customClass="UIResponder"/>
+        <view clearsContextBeforeDrawing="NO" contentMode="scaleToFill" id="i5M-Pr-FkT">
+            <rect key="frame" x="0.0" y="0.0" width="667" height="375"/>
+            <autoresizingMask key="autoresizingMask" widthSizable="YES" heightSizable="YES"/>
+            <subviews>
+                <slider opaque="NO" contentMode="scaleToFill" contentHorizontalAlignment="center" contentVerticalAlignment="center" minValue="0.0" maxValue="1" translatesAutoresizingMaskIntoConstraints="NO" id="1HJ-A3-fsZ">
+                    <rect key="frame" x="131.5" y="300" width="404" height="31"/>
+                    <connections>
+                        <action selector="sliderOnChange:" destination="-1" eventType="valueChanged" id="XTA-9Q-6QG"/>
+                    </connections>
+                </slider>
+                <view contentMode="scaleToFill" translatesAutoresizingMaskIntoConstraints="NO" id="vT1-2c-sNR">
+                    <rect key="frame" x="239" y="73" width="189" height="189"/>
+                    <color key="backgroundColor" white="0.0" alpha="1" colorSpace="custom" customColorSpace="genericGamma22GrayColorSpace"/>
+                    <constraints>
+                        <constraint firstAttribute="width" secondItem="vT1-2c-sNR" secondAttribute="height" multiplier="1:1" id="t0C-dR-7Qp"/>
+                    </constraints>
+                </view>
+            </subviews>
+            <color key="backgroundColor" red="1" green="1" blue="1" alpha="1" colorSpace="custom" customColorSpace="sRGB"/>
+            <constraints>
+                <constraint firstItem="1HJ-A3-fsZ" firstAttribute="centerX" secondItem="fnl-2z-Ty3" secondAttribute="centerX" id="Ceg-A1-NS4"/>
+                <constraint firstItem="vT1-2c-sNR" firstAttribute="centerX" secondItem="fnl-2z-Ty3" secondAttribute="centerX" id="Ndn-qD-aHU"/>
+                <constraint firstItem="1HJ-A3-fsZ" firstAttribute="top" secondItem="vT1-2c-sNR" secondAttribute="bottom" constant="38" id="UVx-cf-FUN"/>
+                <constraint firstItem="fnl-2z-Ty3" firstAttribute="bottom" secondItem="1HJ-A3-fsZ" secondAttribute="bottom" constant="45" id="Xdv-Sz-k78"/>
+                <constraint firstItem="vT1-2c-sNR" firstAttribute="top" secondItem="fnl-2z-Ty3" secondAttribute="top" constant="73" id="eQJ-pw-UM9"/>
+                <constraint firstItem="1HJ-A3-fsZ" firstAttribute="width" secondItem="i5M-Pr-FkT" secondAttribute="width" multiplier="0.6" id="jAj-M0-gLB"/>
+            </constraints>
+            <viewLayoutGuide key="safeArea" id="fnl-2z-Ty3"/>
+            <point key="canvasLocation" x="54.422788605697157" y="205.59999999999999"/>
+        </view>
+    </objects>
+</document>
