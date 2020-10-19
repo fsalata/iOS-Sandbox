@@ -108,6 +108,44 @@ example(of: "drop(untilOutputFrom:)") {
     }
 }
 
+example(of: "prefix") {
+    let numbers = (0...10).publisher
+    
+    numbers
+        .prefix(2)
+        .sink(receiveCompletion: { print("Completed with \($0)") }, receiveValue: { print($0) })
+        .store(in: &subscriptions)
+}
+
+example(of: "prefix(while:)") {
+    let numbers = (0...10).publisher
+    
+    numbers
+        .prefix(while: { $0 < 3 })
+        .sink(receiveCompletion: { print("Completed with \($0)") }, receiveValue: { print($0) })
+        .store(in: &subscriptions)
+}
+
+example(of: "prefix(untilOutputFrom:)") {
+    let isReady = PassthroughSubject<Void, Never>()
+    let taps = PassthroughSubject<Int, Never>()
+    
+    taps
+        .prefix(untilOutputFrom: isReady)
+        .sink(receiveCompletion: { print("Completed with \($0)") }, receiveValue: { print($0) })
+        .store(in: &subscriptions)
+    
+    (1...5).forEach { n in
+        taps.send(n)
+        
+        if n == 2 {
+            isReady.send()
+        }
+    }
+}
+
+
+
 /// Copyright (c) 2019 Razeware LLC
 ///
 /// Permission is hereby granted, free of charge, to any person obtaining a copy
