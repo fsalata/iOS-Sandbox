@@ -18,10 +18,15 @@ class ViewController: UIViewController {
     @Published private var password: String = ""
     @Published private var repeatPassword: String = ""
     
+    var loginButtonCancellable: AnyCancellable?
+    var userNameCancellable: AnyCancellable?
+    var passwordCancellable: AnyCancellable?
+    
     var validateUsername: AnyPublisher<String?, Never> {
         return $username
             .debounce(for: 0.5, scheduler: RunLoop.main)
             .removeDuplicates()
+            .filter { !$0.isEmpty }
             .flatMap { username in
                 return Future { promise in
                     self.isUsernameAvailable(username) { available in
@@ -33,7 +38,9 @@ class ViewController: UIViewController {
     }
     
     var validatePassword: AnyPublisher<String?, Never> {
-        return Publishers.CombineLatest($password, $repeatPassword).map { password, repeatPassword -> String? in
+        return $password.combineLatest($repeatPassword)
+            .filter { !$0.0.isEmpty && !$0.1.isEmpty }
+            .map { password, repeatPassword -> String? in
             guard password == repeatPassword, password.count > 4 else { return nil }
             return password
         }
@@ -42,19 +49,42 @@ class ViewController: UIViewController {
     }
     
     var validateCredentials: AnyPublisher<(String, String)?, Never> {
-        return Publishers.CombineLatest(validateUsername, validatePassword).map { username, password in
+        return validateUsername.combineLatest(validatePassword).map { username, password in
             guard let usr = username, let pwd = password else { return nil }
             return (usr, pwd)
         }
         .eraseToAnyPublisher()
     }
     
-    var loginButtonCancellable: AnyCancellable?
-    
     override func viewDidLoad() {
         super.viewDidLoad()
         
-        loginButtonCancellable = self.validateCredentials
+        [usernameTextField, passwordTextField, repeatPasswordTextField].forEach { textfield in
+            textfield?.layer.borderWidth = 0.3
+            textfield?.layer.borderColor = UIColor.lightGray.cgColor
+            textfield?.layer.cornerRadius = 5
+        }
+        
+        userNameCancellable = validateUsername
+            .map { $0 != nil ? true : false }
+            .receive(on: RunLoop.main)
+            .sink(receiveValue: { isAvailable in
+                self.usernameTextField.layer.borderWidth = isAvailable ? 0.3 : 0.6
+                self.usernameTextField.layer.borderColor = isAvailable ? UIColor.lightGray.cgColor : UIColor.red.cgColor
+            })
+        
+        passwordCancellable = validatePassword
+            .map { $0 != nil ? true : false }
+            .receive(on: RunLoop.main)
+            .sink(receiveValue: { isAvailable in
+                self.passwordTextField.layer.borderWidth = isAvailable ? 0.3 : 0.6
+                self.passwordTextField.layer.borderColor = isAvailable ? UIColor.lightGray.cgColor : UIColor.red.cgColor
+                
+                self.repeatPasswordTextField.layer.borderWidth = isAvailable ? 0.3 : 0.6
+                self.repeatPasswordTextField.layer.borderColor = isAvailable ? UIColor.lightGray.cgColor : UIColor.red.cgColor
+            })
+        
+        loginButtonCancellable = validateCredentials
             .map { $0 != nil }
             .receive(on: RunLoop.main)
             .assign(to: \.isEnabled, on: loginButton)
@@ -74,7 +104,7 @@ class ViewController: UIViewController {
     
     private func isUsernameAvailable(_ username: String, completion: @escaping (_ available: Bool) -> Void) {
         DispatchQueue.global().asyncAfter(deadline: .now() + 2) {
-            completion(true)
+            completion(username == "bin" ? true : false)
         }
     }
 }
