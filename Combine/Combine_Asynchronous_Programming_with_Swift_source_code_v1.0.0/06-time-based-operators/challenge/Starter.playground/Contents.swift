@@ -4,7 +4,22 @@ import Foundation
 // A subject you get values from
 let subject = PassthroughSubject<Int, Never>()
 
-<#Add your code here#>
+let strings = subject
+    .collect(.byTime(RunLoop.main, .seconds(0.5)))
+    .map { array in
+        String(array.map { Character(Unicode.Scalar($0)!) })
+    }
+
+let spaces = subject
+    .measureInterval(using: RunLoop.main)
+    .map { interval in
+        interval > 0.9  ? "👏🏻" : ""
+    }
+
+let subscription = strings
+    .merge(with: spaces)
+    .filter { !$0.isEmpty }
+    .sink { print($0) }
 
 // Let's roll!
 startFeeding(subject: subject)

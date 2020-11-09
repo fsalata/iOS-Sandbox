@@ -27,58 +27,132 @@
 /// THE SOFTWARE.
 
 import UIKit
+import Combine
 
 class MainViewController: UIViewController {
-  
-  // MARK: - Outlets
-
-  @IBOutlet weak var imagePreview: UIImageView! {
-    didSet {
-      imagePreview.layer.borderColor = UIColor.gray.cgColor
+    
+    // MARK: - Outlets
+    
+    @IBOutlet weak var imagePreview: UIImageView! {
+        didSet {
+            imagePreview.layer.borderColor = UIColor.gray.cgColor
+        }
     }
-  }
-  @IBOutlet weak var buttonClear: UIButton!
-  @IBOutlet weak var buttonSave: UIButton!
-  @IBOutlet weak var itemAdd: UIBarButtonItem!
+    @IBOutlet weak var buttonClear: UIButton!
+    @IBOutlet weak var buttonSave: UIButton!
+    @IBOutlet weak var itemAdd: UIBarButtonItem!
+    
+    // MARK: - Private properties
+    private var subscriptions = Set<AnyCancellable>()
+    private let images = CurrentValueSubject<[UIImage], Never>([])
+    
+    // MARK: - View controller
+    
+    override func viewDidLoad() {
+        super.viewDidLoad()
+        let collageSize = imagePreview.frame.size
+        
+        images
+            .handleEvents(receiveOutput: { [weak self] photos in
+                self?.updateUI(photos: photos)
+            })
+            .map{ photos in
+                UIImage.collage(images: photos, size: collageSize)
+            }
+            .assign(to: \.image, on: imagePreview)
+            .store(in: &subscriptions)
+    }
+    
+    private func updateUI(photos: [UIImage]) {
+        buttonSave.isEnabled = photos.count > 0 && photos.count % 2 == 0
+        buttonClear.isEnabled = photos.count > 0
+        itemAdd.isEnabled = photos.count < 6
+        title = photos.count > 0 ? "\(photos.count) photos" : "Collage"
+    }
+    
+    // MARK: - Actions
+    
+    @IBAction func actionClear() {
+        images.send([])
+    }
+    
+    @IBAction func actionSave() {
+        guard let image = imagePreview.image else { return }
+        
+        PhotoWriter.save(image)
+            .sink { [unowned self] completion in
+                if case .failure(let error) = completion {
+                    self.showMessage("Error", description: error.localizedDescription)
+                }
+                self.actionClear()
+            } receiveValue: { [unowned self] id in
+                self.showMessage("Saved with id: \(id)")
+            }
+            .store(in: &subscriptions)
 
-  // MARK: - Private properties
-  
+    }
+    
+    @IBAction func actionAdd() {
+//        let newImages = images.value + [UIImage(named: "IMG_1907.jpg")!]
+//        images.send(newImages)
+        
+        let photos = storyboard!.instantiateViewController(withIdentifier: "PhotosViewController") as! PhotosViewController
+        
+        photos.$selectedPhotosCount
+            .filter { $0 > 0 }
+            .map { "Selected \($0) photos" }
+            .assign(to: \.title, on: self)
+            .store(in: &subscriptions)
+        
+        let newPhotos = photos.selectedPhotos
+            .filter({ image in
+                return image.size.width > image.size.height
+            })
+            .prefix(while: { [unowned self] _ in
+                return self.images.value.count < 6
+            })
+            .share()
+        
+        newPhotos
+            .map { [unowned self] newImage in
+                return self.images.value + [newImage]
+            }
+            .subscribe(images)
+            .store(in: &subscriptions)
+        
+        newPhotos
+            .ignoreOutput()
+            .delay(for: 2.0, scheduler: RunLoop.main)
+            .sink { [unowned self] _ in
+                self.updateUI(photos: self.images.value)
+            } receiveValue: { _ in }
+            .store(in: &subscriptions)
 
-  // MARK: - View controller
-  
-  override func viewDidLoad() {
-    super.viewDidLoad()
-    let collageSize = imagePreview.frame.size
+        newPhotos
+            .ignoreOutput()
+            .filter { [unowned self] _ in
+                self.images.value.count == 6
+            }
+            .flatMap { [unowned self] _ in
+                self.alert(title: "Limit reached", text: "Maximum number of photos reached")
+            }
+            .sink { _ in
+                photos.navigationController?.popViewController(animated: true)
+            } receiveValue: { _ in }
+            .store(in: &subscriptions)
+        
+        navigationController?.pushViewController(photos, animated: true)
+    }
     
-  }
-  
-  private func updateUI(photos: [UIImage]) {
-    buttonSave.isEnabled = photos.count > 0 && photos.count % 2 == 0
-    buttonClear.isEnabled = photos.count > 0
-    itemAdd.isEnabled = photos.count < 6
-    title = photos.count > 0 ? "\(photos.count) photos" : "Collage"
-  }
-  
-  // MARK: - Actions
-  
-  @IBAction func actionClear() {
-    
-  }
-  
-  @IBAction func actionSave() {
-    guard let image = imagePreview.image else { return }
-    
-  }
-  
-  @IBAction func actionAdd() {
-    
-  }
-  
-  private func showMessage(_ title: String, description: String? = nil) {
-    let alert = UIAlertController(title: title, message: description, preferredStyle: .alert)
-    alert.addAction(UIAlertAction(title: "Close", style: .default, handler: { alert in
-      self.dismiss(animated: true, completion: nil)
-    }))
-    present(alert, animated: true, completion: nil)
-  }
+    private func showMessage(_ title: String, description: String? = nil) {
+//        let alert = UIAlertController(title: title, message: description, preferredStyle: .alert)
+//        alert.addAction(UIAlertAction(title: "Close", style: .default, handler: { alert in
+//            self.dismiss(animated: true, completion: nil)
+//        }))
+//        present(alert, animated: true, completion: nil)
+        
+        alert(title: title, text: description)
+            .sink(receiveValue: { _ in })
+            .store(in: &subscriptions)
+    }
 }
